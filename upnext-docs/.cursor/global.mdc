@@ -1,0 +1,19 @@
+---
+description: Global rules for formatting, ignoring folders, and maintaining clean project structure across the entire UpNext codebase.
+globs: *.*, !*.md, !*.mdc
+alwaysApply: false
+---
+## Ignore the following folders globally:
+- /node_modules
+- /.next
+- /dist
+- /.git
+
+## Ignore sensitive and unimportant files:
+- .env
+- *.log
+- .DS_Store
+
+## On save, run Prettier for consistent formatting:
+```sh
+prettier --write .
