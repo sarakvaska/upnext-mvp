@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Link } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Mock data - replace with real data from Supabase later
 const MOCK_PROJECTS = [
   {
     id: '1',
     title: 'Collabs',
-    subtitle: 'ivanajohnson • Draft',
+    subtitle: 'updated 2 mins ago',
     images: [
       'https://via.placeholder.com/150',
       'https://via.placeholder.com/150',
@@ -18,13 +19,13 @@ const MOCK_PROJECTS = [
   {
     id: '2',
     title: 'Summer Collection',
-    subtitle: 'Draft',
+    subtitle: 'updated Apr 6',
     images: ['https://via.placeholder.com/300/FFB6C1']
   },
   {
     id: '3',
     title: 'Thailand 2024',
-    subtitle: 'ivanajohnson • Draft',
+    subtitle: 'sarakvaska • updated 1 hr ago',
     images: ['https://via.placeholder.com/300/87CEEB']
   },
 ];
@@ -34,9 +35,52 @@ const PADDING = 10;
 const SPACING = 6;
 const CARD_WIDTH = (width - (PADDING * 2) - (SPACING * 2)) / 3;
 
+type FilterButtonProps = {
+  title: string;
+};
+
 export default function HomeScreen() {
+  const [selectedFilter, setSelectedFilter] = useState('All');
+
+  const FilterButton = ({ title }: FilterButtonProps) => {
+    const isSelected = selectedFilter === title;
+    
+    return (
+      <TouchableOpacity 
+        onPress={() => setSelectedFilter(title)}
+        style={styles.filterButtonContainer}
+      >
+        {isSelected ? (
+          <LinearGradient
+            colors={['#3A7BD5', '#9D50BB']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.filterButtonGradientBorder}
+          >
+            <View style={styles.filterButtonInner}>
+              <Text style={[styles.filterButtonText, styles.filterButtonTextSelected]}>
+                {title}
+              </Text>
+            </View>
+          </LinearGradient>
+        ) : (
+          <View style={styles.filterButtonInactive}>
+            <Text style={styles.filterButtonText}>
+              {title}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <ScrollView style={styles.container}>
+      <View style={styles.filtersContainer}>
+        <FilterButton title="All" />
+        <FilterButton title="Mine" />
+        <FilterButton title="Shared With Me" />
+      </View>
       <View style={styles.content}>
         {MOCK_PROJECTS.map((project) => (
           <TouchableOpacity key={project.id} style={styles.projectCard}>
@@ -116,5 +160,44 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 12,
     textAlign: 'left',
+  },
+  filtersContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: PADDING,
+    paddingVertical: 6,
+    gap: 8,
+  },
+  filterButtonContainer: {
+    height: 40,
+  },
+  filterButtonGradientBorder: {
+    borderRadius: 20,
+    padding: 1.5,
+    height: 40,
+  },
+  filterButtonInactive: {
+    backgroundColor: '#000',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderWidth: 1.5,
+    borderColor: '#2b2b2d',
+    height: 40,
+  },
+  filterButtonInner: {
+    backgroundColor: '#000',
+    borderRadius: 18.5,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  filterButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  filterButtonTextSelected: {
+    fontWeight: '600',
   },
 }); 

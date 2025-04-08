@@ -1,85 +1,103 @@
 // @@iconify-code-gen
-import React from 'react';
-import { Tabs } from 'expo-router';
-import { View, Text, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { Tabs, router, Stack } from 'expo-router';
+import { View, Text, Pressable, Modal, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/Header';
 import { useColorScheme } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  withTiming,
+  Easing,
+  runOnJS
+} from 'react-native-reanimated';
 
-export default function AppLayout() {
-  const colorScheme = useColorScheme();
+interface RouteType {
+  name: string;
+}
 
+interface TabIconProps {
+  color: string;
+}
+
+const { height } = Dimensions.get('window');
+
+export default function RootLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        header: () => <Header />,
-        tabBarStyle: {
-          backgroundColor: '#000',
-          borderTopWidth: 0,
-          height: 85,
-          paddingTop: 10,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-        },
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: '#666',
-        headerStyle: {
-          backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
-        },
-        headerTintColor: colorScheme === 'dark' ? '#fff' : '#000',
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Projects',
-          tabBarIcon: ({ color }: { color: string }) => (
-            <Iconify icon="material-symbols:grid-on" color={color} size={26} />
-          ),
-        }}
+    <Stack>
+      <Stack.Screen 
+        name="(tabs)" 
+        options={{ 
+          headerShown: false,
+        }} 
       />
-      
-      <Tabs.Screen
-        name="upload"
-        options={{
-          title: '',
-          tabBarIcon: () => (
-            <View style={{
-              width: 110,
-              height: 55,
-              overflow: 'hidden',
-              borderRadius: 16,
-              marginBottom: -12,
-            }}>
-              <LinearGradient
-                colors={['#3A7BD5', '#9D50BB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  flex: 1,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }}>Create</Text>
-              </LinearGradient>
-            </View>
-          ),
-        }}
+      <Stack.Screen 
+        name="project" 
+        options={{ 
+          headerShown: false,
+        }} 
       />
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }: { color: string }) => (
-            <Iconify icon="material-symbols:person-rounded" color={color} size={26} />
-          ),
-        }}
-      />
-    </Tabs>
+    </Stack>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  createButtonContainer: {
+    width: 100,
+    height: 48,
+    overflow: 'hidden',
+    borderRadius: 16,
+    marginBottom: -16, // Keep the button positioned correctly
+  },
+  createButtonGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 8,
+    marginBottom: 90,
+    width: '45%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+    transformOrigin: 'bottom',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuItemText: {
+    color: '#fff',
+    fontSize: 16,
+    marginLeft: 12,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#3A3A3C',
+    marginHorizontal: 16,
+  },
+}); 
