@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "UpNext",
+    "slug": "upnext",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.upnext.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.upnext.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow UpNext to access your photos to upload videos.",
+          "savePhotosPermission": "Allow UpNext to save videos."
+        }
+      ]
+    ],
+    "scheme": "upnext",
+    "experiments": {
+      "tsconfigPaths": true,
+      "typedRoutes": true
+    },
+    "newArchEnabled": true
+  }
+}
