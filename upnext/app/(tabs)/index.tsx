@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
+type Project = {
+  id: string;
+  title: string;
+  subtitle: string;
+  images: string[];
+  type: 'folder' | 'project';
+};
+
 // Mock data - replace with real data from Supabase later
-const MOCK_PROJECTS = [
+const MOCK_PROJECTS: Project[] = [
   {
     id: '1',
     title: 'Collabs',
     subtitle: 'updated 2 mins ago',
+    type: 'folder',
     images: [
       'https://via.placeholder.com/150',
       'https://via.placeholder.com/150',
@@ -20,12 +29,14 @@ const MOCK_PROJECTS = [
     id: '2',
     title: 'Summer Collection',
     subtitle: 'updated Apr 6',
+    type: 'project',
     images: ['https://via.placeholder.com/300/FFB6C1']
   },
   {
     id: '3',
     title: 'Thailand 2024',
     subtitle: 'sarakvaska • updated 1 hr ago',
+    type: 'project',
     images: ['https://via.placeholder.com/300/87CEEB']
   },
 ];
@@ -83,7 +94,23 @@ export default function HomeScreen() {
       </View>
       <View style={styles.content}>
         {MOCK_PROJECTS.map((project) => (
-          <TouchableOpacity key={project.id} style={styles.projectCard}>
+          <TouchableOpacity 
+            key={project.id} 
+            style={styles.projectCard}
+            onPress={() => {
+              if (project.type === 'folder') {
+                router.push({
+                  pathname: '/folder/[id]',
+                  params: { id: project.id }
+                });
+              } else {
+                router.push({
+                  pathname: '/project/[id]',
+                  params: { id: project.id }
+                });
+              }
+            }}
+          >
             {project.images.length === 1 ? (
               <Image
                 source={{ uri: project.images[0] }}
@@ -151,7 +178,7 @@ const styles = StyleSheet.create({
   },
   projectTitle: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 4,
     textAlign: 'left',
@@ -183,19 +210,22 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#2b2b2d',
     height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterButtonInner: {
     backgroundColor: '#000',
-    borderRadius: 18.5,
+    borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 9,
     height: '100%',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   filterButtonText: {
     color: '#FFF',
     fontSize: 14,
     fontWeight: '500',
+    textAlignVertical: 'center',
   },
   filterButtonTextSelected: {
     fontWeight: '600',

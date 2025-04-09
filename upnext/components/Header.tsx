@@ -59,11 +59,11 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   iconButton: {
     padding: 9,
-    backgroundColor: '#333333',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 14,
   },
 }); 

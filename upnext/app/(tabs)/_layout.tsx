@@ -11,10 +11,10 @@ import Animated, {
   withSpring,
   withTiming,
   Easing,
-  runOnJS
+  runOnJS,
+  FadeIn,
+  FadeOut,
 } from 'react-native-reanimated';
-
-const { height } = Dimensions.get('window');
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -24,6 +24,7 @@ export default function TabLayout() {
   const modalScale = useSharedValue(0);
   const modalOpacity = useSharedValue(0);
   const modalY = useSharedValue(20);
+  const textOpacity = useSharedValue(1);
 
   const openMenu = () => {
     setIsMenuOpen(true);
@@ -97,7 +98,7 @@ export default function TabLayout() {
           tabBarStyle: {
             backgroundColor: '#000',
             borderTopWidth: 0,
-            height: 85,
+            height: 90,
             paddingTop: 10,
           },
           tabBarLabelStyle: {
@@ -144,9 +145,21 @@ export default function TabLayout() {
                   end={{ x: 1, y: 1 }}
                   style={styles.createButtonGradient}
                 >
-                  <Text style={styles.createButtonText}>
-                    {isMenuOpen ? 'Close' : 'Create'}
-                  </Text>
+                  {isMenuOpen ? (
+                    <Animated.Text 
+                      entering={FadeIn.duration(200)} 
+                      style={styles.createButtonText}
+                    >
+                      Close
+                    </Animated.Text>
+                  ) : (
+                    <Animated.Text 
+                      entering={FadeIn.duration(200)} 
+                      style={styles.createButtonText}
+                    >
+                      Create
+                    </Animated.Text>
+                  )}
                 </LinearGradient>
               </View>
             ),
@@ -193,8 +206,8 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   createButtonContainer: {
-    width: 100,
-    height: 48,
+    width: 110,
+    height: 50,
     overflow: 'hidden',
     borderRadius: 16,
     marginBottom: -16,
