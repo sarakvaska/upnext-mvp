@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Iconify } from 'react-native-iconify';
 
 type Project = {
   id: string;
@@ -9,6 +9,7 @@ type Project = {
   subtitle: string;
   images: string[];
   type: 'folder' | 'project';
+  parentFolder: string;
 };
 
 // Mock data - replace with real data from Supabase later
@@ -18,38 +19,54 @@ const MOCK_PROJECTS: Project[] = [
     title: 'Nike',
     subtitle: 'Draft',
     type: 'project',
-    images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800']
+    images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800'], 
+    parentFolder: 'Collabs'
   },
   {
     id: '2',
     title: 'Glossier',
     subtitle: 'Draft',
     type: 'project',
-    images: ['https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=800']
+    images: ['https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=800'],
+    parentFolder: 'Collabs'
   },
   {
     id: '3',
     title: 'Poppi 🌸',
     subtitle: 'Draft',
     type: 'project',
-    images: ['https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=800']
+    images: ['https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=800'],
+    parentFolder: 'Collabs'
   },
   {
     id: '4',
     title: 'Chanel',
     subtitle: 'Draft',
     type: 'project',
-    images: ['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800']
+    images: ['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800'],
+    parentFolder: 'Collabs'
   }
 ];
 
 const { width } = Dimensions.get('window');
 const PADDING = 10;
 const SPACING = 6;
-const CARD_WIDTH = (width - (PADDING * 2) - (SPACING * 2)) / 3;
+const GRID_COLUMNS = 3;
+const GRID_WIDTH = width - (PADDING * 2);
+const PROJECT_SIZE = (GRID_WIDTH - (SPACING * (GRID_COLUMNS - 1))) / GRID_COLUMNS;
 
 export default function FolderScreen() {
+  const { id } = useLocalSearchParams();
+  const project = MOCK_PROJECTS.find((p: Project) => p.id === id && p.type === 'project');
   const projectsInFolder = MOCK_PROJECTS.filter(p => p.type === 'project');
+
+  if (!project) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.text}>Project not found</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <>
@@ -61,43 +78,34 @@ export default function FolderScreen() {
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={24} color="white" />
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerButtonFull}>
+            <Iconify icon="material-symbols:chevron-left-rounded" size={30} color="white" />
+            <Text style={styles.headerTitle}>{project.parentFolder}</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView>
           {/* Projects Grid */}
           <View style={styles.content}>
-              {projectsInFolder.map((project) => (
+            <View style={styles.projectsGrid}>
+              {projectsInFolder.map((proj) => (
                 <TouchableOpacity 
-                  key={project.id}
+                  key={proj.id}
                   style={styles.projectCard}
-                  onPress={() => router.push(`/project/${project.id}`)}
+                  onPress={() => router.push(`/project/${proj.id}?folderTitle=${project.parentFolder}`)}
                 >
-                  {project.images.length === 1 ? (
-              <Image
-                source={{ uri: project.images[0] }}
-                style={styles.singleImage}
-              />
-            ) : (
-              <View style={styles.imageGrid}>
-                {project.images.slice(0, 4).map((image, index) => (
                   <Image
-                    key={index}
-                    source={{ uri: image }}
-                    style={styles.gridImage}
+                    source={{ uri: proj.images[0] }}
+                    style={styles.projectImage}
                   />
-                ))}
-              </View>
-            )}
                   <View style={styles.projectInfo}>
-                    <Text style={styles.projectTitle}>{project.title}</Text>
-                    <Text style={styles.projectSubtitle}>{project.subtitle}</Text>
+                    <Text style={styles.projectTitle}>{proj.title}</Text>
+                    <Text style={styles.projectSubtitle}>{proj.subtitle}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </>
@@ -105,9 +113,12 @@ export default function FolderScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 8,
@@ -126,53 +137,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
   content: {
     padding: PADDING,
+  },
+  projectsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING,
   },
   projectCard: {
-    width: CARD_WIDTH,
+    width: PROJECT_SIZE,
   },
-  singleImage: {
+  projectImage: {
     width: '100%',
-    height: CARD_WIDTH,
+    aspectRatio: 1,
     backgroundColor: '#1C1C1E',
     borderRadius: 12,
-  },
-  imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 1,
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  gridImage: {
-    width: (CARD_WIDTH - 1) / 2,
-    height: (CARD_WIDTH - 1) / 2,
-    backgroundColor: '#2C2C2E',
   },
   projectInfo: {
-    paddingVertical: 8,
-    paddingHorizontal: 2,
-    alignItems: 'flex-start',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
   },
   projectTitle: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
     marginBottom: 4,
-    textAlign: 'left',
   },
   projectSubtitle: {
-    color: '#666',
-    fontSize: 12,
-    textAlign: 'left',
-  }
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 13,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  text: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  headerButtonFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
 }); 

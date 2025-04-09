@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions
 import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Iconify from 'react-native-iconify';
 
 type Project = {
   id: string;
@@ -29,7 +30,7 @@ const MOCK_PROJECTS: Project[] = [
   {
     id: '2',
     title: 'Summer Collection 2025',
-    subtitle: 'Draft • 10 photos • 2 videos',
+    subtitle: 'updated april 6 • 10 photos • 2 videos',
     type: 'project',
     images: [
       'https://images.unsplash.com/photo-1515516969-d4008cc6241a?w=800',
@@ -42,7 +43,7 @@ const MOCK_PROJECTS: Project[] = [
   {
     id: '3',
     title: 'Thailand 2024',
-    subtitle: 'sarakvaska • updated 1 hr ago',
+    subtitle: 'sarakvaska • updated 1 hr ago • 1 video',
     type: 'project',
     images: ['https://via.placeholder.com/300/87CEEB']
   },
@@ -61,67 +62,68 @@ export default function ProjectScreen() {
 
   if (!project) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.text}>Project not found</Text>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <SafeAreaView>
+          <Text style={styles.text}>Project not found</Text>
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Ionicons name="chevron-back" size={24} color="white" />
-        </TouchableOpacity>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={[styles.headerButton, styles.headerButtonDark]}>
-            <Ionicons name="link" size={24} color="white" />
+    <View style={styles.container}>
+      <SafeAreaView>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+            <Iconify icon="material-symbols:chevron-left-rounded" size={30} color="white" />
           </TouchableOpacity>
-          {/* <TouchableOpacity style={[styles.headerButton, styles.headerButtonDark]}>
-            <Ionicons name="search" size={22} color="white" />
-          </TouchableOpacity> */}
-          <TouchableOpacity style={[styles.headerButton, styles.headerButtonDark]}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView>
-        {/* Main Content */}
-        <View style={styles.content}>
-          <Image 
-            source={{ uri: project.images[0] }}
-            style={styles.mainImage}
-          />
-          <Text style={styles.title}>{project.title}</Text>
-          <Text style={styles.subtitle}>{project.subtitle}</Text>
-
-          {/* Add Button */}
-          <TouchableOpacity style={styles.addButtonContainer}>
-            <LinearGradient
-              colors={['#3A7BD5', '#9D50BB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.addButton}
-            >
-              <Text style={styles.addButtonText}>Add</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Image Grid */}
-          <View style={styles.imageGrid}>
-            {project.images.map((image, index) => (
-              <Image
-                key={index}
-                source={{ uri: image }}
-                style={styles.gridImage}
-              />
-            ))}
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={[styles.headerButton, styles.headerButtonDark]}>
+              <Iconify icon="mdi:link-variant" size={24} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.headerButton, styles.headerButtonDark]}>
+              <Iconify icon="mdi:ellipsis-horizontal" size={24} color="white" />
+            </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Main Content */}
+          <View style={styles.content}>
+            <Image 
+              source={{ uri: project.images[0] }}
+              style={styles.mainImage}
+            />
+            <Text style={styles.title}>{project.title}</Text>
+            <Text style={styles.subtitle}>{project.subtitle}</Text>
+
+            {/* Add Button */}
+            <TouchableOpacity style={styles.addButtonContainer}>
+              <LinearGradient
+                colors={['#3A7BD5', '#9D50BB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.addButton}
+              >
+                <Text style={styles.addButtonText}>Add</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Image Grid */}
+            <View style={styles.imageGrid}>
+              {project.images.map((image, index) => (
+                <Image
+                  key={index}
+                  source={{ uri: image }}
+                  style={styles.gridImage}
+                />
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -129,6 +131,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -138,21 +141,27 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   headerButton: {
-    padding: 9,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 12,
   },
   headerButtonDark: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerRight: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
   content: {
     padding: PADDING,
+    paddingBottom: 100,
   },
   mainImage: {
     width: '100%',

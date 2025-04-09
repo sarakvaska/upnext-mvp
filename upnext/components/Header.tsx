@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
-export default function Header() {
+export default function Header({ screen, icon }: { screen: string; icon?: string }) {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -21,16 +21,26 @@ export default function Header() {
             />
           </Svg>
         </View>
-        <Text style={styles.logoText}>upnext</Text>
+        <Text style={styles.logoText}>
+          {screen === 'profile' ? 'account' : 'upnext'}
+        </Text>
       </View>
       
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Iconify icon="material-symbols:search-rounded" color="#fff" size={24} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <Iconify icon="mingcute:notification-line" color="#fff" size={24} />
-        </TouchableOpacity>
+        {icon ? (
+          <TouchableOpacity style={styles.iconButton}>
+            <Iconify icon={icon} color="#fff" size={24} />
+          </TouchableOpacity>
+        ) : screen !== 'profile' ? (
+          <>
+            <TouchableOpacity style={styles.iconButton}>
+              <Iconify icon="material-symbols:search-rounded" color="#fff" size={24} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton}>
+              <Iconify icon="mingcute:notification-line" color="#fff" size={24} />
+            </TouchableOpacity>
+          </>
+        ) : null}
       </View>
     </View>
   );
@@ -60,6 +70,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    minHeight: 42,
   },
   iconButton: {
     padding: 9,

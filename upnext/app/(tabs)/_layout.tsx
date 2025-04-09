@@ -13,8 +13,8 @@ import Animated, {
   Easing,
   runOnJS,
   FadeIn,
-  FadeOut,
 } from 'react-native-reanimated';
+import ProfileHeader from './profile';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -93,8 +93,13 @@ export default function TabLayout() {
   return (
     <>
       <Tabs
-        screenOptions={{
-          header: () => <Header />,
+        screenOptions={({ route }: { route: any }) => ({
+          header: () => {
+            if (route.name === 'profile') {
+              return <Header screen="profile" />;
+            }
+            return <Header screen="index" />;
+          },
           tabBarStyle: {
             backgroundColor: '#000',
             borderTopWidth: 0,
@@ -111,7 +116,7 @@ export default function TabLayout() {
             backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
           },
           headerTintColor: colorScheme === 'dark' ? '#fff' : '#000',
-        }}
+        })}
       >
         <Tabs.Screen
           name="index"
