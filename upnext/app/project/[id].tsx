@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Iconify from 'react-native-iconify';
+import ShareProjectModal from '../components/ShareProjectModal';
 
 type Project = {
   id: string;
@@ -59,6 +60,7 @@ const THUMBNAIL_SIZE = (GRID_WIDTH - (SPACING * (GRID_COLUMNS - 1))) / GRID_COLU
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams();
   const project = MOCK_PROJECTS.find((p: Project) => p.id === id && p.type === 'project');
+  const [isShareModalVisible, setIsShareModalVisible] = useState(false);
 
   if (!project) {
     return (
@@ -79,7 +81,10 @@ export default function ProjectScreen() {
             <Iconify icon="material-symbols:chevron-left-rounded" size={30} color="white" />
           </TouchableOpacity>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={[styles.headerButton, styles.headerButtonDark]}>
+            <TouchableOpacity 
+              style={[styles.headerButton, styles.headerButtonDark]}
+              onPress={() => setIsShareModalVisible(true)}
+            >
               <Iconify icon="mdi:link-variant" size={24} color="white" />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.headerButton, styles.headerButtonDark]}>
@@ -113,15 +118,33 @@ export default function ProjectScreen() {
             {/* Image Grid */}
             <View style={styles.imageGrid}>
               {project.images.map((image, index) => (
-                <Image
+                <TouchableOpacity
                   key={index}
-                  source={{ uri: image }}
-                  style={styles.gridImage}
-                />
+                  onPress={() => router.push({
+                    pathname: '/project/media/[id]',
+                    params: { 
+                      id: index.toString(), 
+                      initialIndex: index,
+                      images: JSON.stringify(project.images)
+                    }
+                  })}
+                >
+                  <Image
+                    source={{ uri: image }}
+                    style={styles.gridImage}
+                  />
+                </TouchableOpacity>
               ))}
             </View>
           </View>
         </ScrollView>
+
+        <ShareProjectModal
+          isVisible={isShareModalVisible}
+          onClose={() => setIsShareModalVisible(false)}
+          projectTitle={project.title}
+          projectImage={project.images[0]}
+        />
       </SafeAreaView>
     </View>
   );
