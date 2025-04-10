@@ -215,11 +215,11 @@ export default function MediaViewerScreen() {
     // First dismiss the keyboard
     Keyboard.dismiss();
     
-    // Immediately start closing the modal without delay
-    setIsModalVisible(false);
-    
-    // Reset other state
+    // Reset input position instantly without animation
     inputBarPosition.setValue(0);
+    
+    // Close modal immediately
+    setIsModalVisible(false);
     setNewNote('');
   };
 
@@ -236,51 +236,65 @@ export default function MediaViewerScreen() {
     }
   }, [isModalVisible]);
 
-  // Custom keyboard handling to make input bar stick to keyboard
+  // Custom keyboard handling specifically for the modal input bar
   useEffect(() => {
     const showListener = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideListener = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const keyboardWillShow = (e: any) => {
+    const keyboardWillShowForModal = (e: any) => {
       if (isModalVisible) {
+        // Set state directly without batching or debouncing
         setKeyboardShowing(true);
         setKeyboardHeightValue(e.endCoordinates.height);
         
-        // Add a small offset (10-15 pixels) to move input bar slightly down
+        // Increased offset to position input bar lower (further from keyboard)
         const keyboardOffset = Platform.OS === 'ios' 
-          ? Math.min(40, e.endCoordinates.height * 0.08)
-          : 20; // Increase from 10 to 20
+          ? 30  // Larger offset to position lower on iOS
+          : 15; // Slightly smaller for Android
         
-        // Animate the input bar to move up with the keyboard, but with offset
+        // For immediate response, set value directly first
+        inputBarPosition.setValue(-(e.endCoordinates.height - keyboardOffset));
+        
+        // Speed up animation to anticipate keyboard movement
+        const animDuration = Platform.OS === 'ios'
+          ? Math.max(e.duration * 0.7, 160) // 30% faster than keyboard
+          : Math.max(e.duration * 0.6, 100); // 40% faster on Android
+        
+        // Then start the animation immediately from the current position
         Animated.timing(inputBarPosition, {
           toValue: -(e.endCoordinates.height - keyboardOffset),
-          duration: Platform.OS === 'ios' ? e.duration : 200,
+          duration: animDuration,
           useNativeDriver: true,
-          easing: Platform.OS === 'ios' 
-            ? Easing.bezier(0.17, 0.59, 0.3, 0.97) // iOS keyboard curve
-            : Easing.out(Easing.poly(3)), // Android curve
+          easing: Easing.out(Easing.quad), // Use quad-out for faster initial movement
         }).start();
       }
     };
 
-    const keyboardWillHide = (e: any) => {
+    const keyboardWillHideForModal = (e: any) => {
       if (isModalVisible) {
+        // Set state directly without batching or debouncing
         setKeyboardShowing(false);
         
-        // Animate the input bar to move down with the keyboard
+        // Speed up animation for hiding as well
+        const animDuration = Platform.OS === 'ios'
+          ? Math.max(e.duration * 0.7, 160) // 30% faster than keyboard
+          : Math.max(e.duration * 0.6, 100); // 40% faster on Android
+        
+        // For immediate response, set value directly first
+        inputBarPosition.setValue(0);
+        
+        // Start animation in the same tick
         Animated.timing(inputBarPosition, {
           toValue: 0,
-          duration: Platform.OS === 'ios' ? e.duration : 200, // Android needs faster animation
+          duration: animDuration,
           useNativeDriver: true,
-          easing: Platform.OS === 'ios' 
-            ? Easing.bezier(0.17, 0.59, 0.3, 0.97) // iOS keyboard curve
-            : Easing.in(Easing.poly(3)), // Android curve
+          easing: Easing.out(Easing.quad), // Matching the show animation
         }).start();
       }
     };
 
-    const keyboardShowSub = Keyboard.addListener(showListener, keyboardWillShow);
-    const keyboardHideSub = Keyboard.addListener(hideListener, keyboardWillHide);
+    const keyboardShowSub = Keyboard.addListener(showListener, keyboardWillShowForModal);
+    const keyboardHideSub = Keyboard.addListener(hideListener, keyboardWillHideForModal);
 
     return () => {
       keyboardShowSub.remove();
@@ -483,27 +497,20 @@ export default function MediaViewerScreen() {
               <View style={styles.noteInput}>
                 <Text style={styles.inputPlaceholder}>Add a note...</Text>
               </View>
-              <View style={styles.addNoteButtonContainer}>
-                <LinearGradient
-                  colors={['#3A7BD5', '#9D50BB']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.addNoteButton}
-                >
-                  <Iconify icon="material-symbols:send" size={18} color="white" />
-                </LinearGradient>
-              </View>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
 
         <Modal
-          visible={isModalVisible}
           animationType="slide"
+          visible={isModalVisible}
           presentationStyle="pageSheet"
           statusBarTranslucent={true}
-          onRequestClose={handleModalClose}
-          onDismiss={handleModalClose}
+          onRequestClose={() => {
+            Keyboard.dismiss();
+            setIsModalVisible(false);
+            setNewNote('');
+          }}
           hardwareAccelerated={true}
         >
           <SafeAreaView style={styles.modalContainer}>
@@ -515,14 +522,17 @@ export default function MediaViewerScreen() {
                 </Text>
               </Text>
               <TouchableOpacity 
-                onPress={handleModalClose}
-                style={styles.modalCloseButton}
-                activeOpacity={0.5}
-                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                onPress={() => setIsModalVisible(false)}
+                style={{
+                  padding: 12,
+                  zIndex: 30,
+                }}
               >
-                <View style={styles.closeButtonHitSlop}>
-                  <Text style={styles.modalDoneButton}>Close</Text>
-                </View>
+                <Text style={{
+                  fontSize: 15,
+                  fontWeight: '500',
+                  color: '#fff',
+                }}>Close</Text>
               </TouchableOpacity>
             </View>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -541,14 +551,17 @@ export default function MediaViewerScreen() {
             </TouchableWithoutFeedback>
             
             {/* Input bar that stays above keyboard */}
-            <Animated.View style={[
-              styles.modalInputWrapper,
-              {
-                transform: [{ translateY: inputBarPosition }],
-                paddingBottom: insets.bottom > 0 ? insets.bottom - (keyboardShowing ? 8 : 0) : 10,
-                marginBottom: keyboardShowing ? 5 : 0
-              }
-            ]}>
+            <Animated.View 
+              style={[
+                styles.modalInputWrapper,
+                {
+                  transform: [{ translateY: inputBarPosition }],
+                  paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+                  backgroundColor: '#000',
+                }
+              ]}
+              collapsable={false}
+            >
               <View style={styles.modalInputContainer}>
                 <TextInput
                   style={styles.modalInput}
@@ -817,8 +830,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: 'white',
     fontSize: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     minHeight: 36,
@@ -920,9 +931,9 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   modalCloseButton: {
-    padding: 8,
+    padding: 12,
     marginRight: -8,
-    zIndex: 15,
+    zIndex: 20,
   },
   closeButtonHitSlop: {
     padding: 4,
