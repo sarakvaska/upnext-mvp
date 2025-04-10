@@ -7,8 +7,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { Image as ExpoImage } from 'expo-image';
 
-const { width, height } = Dimensions.get('window');
-
 const PORTRAIT_RATIO = 1.3;    // height = width * 1.3
 const LANDSCAPE_RATIO = 0.85;  // height = width * 0.85
 const COLLAPSED_HEIGHT = 48;
@@ -188,130 +186,153 @@ export default function MediaViewerScreen() {
     const imageRatio = mediaAspectRatios[imageUrl] || 1;
     const isPortrait = imageRatio > 1;
     
-    // Calculate base height based on orientation
-    const baseHeight = width * (isPortrait ? PORTRAIT_RATIO : LANDSCAPE_RATIO);
+    // Use fixed ratios for both portrait and landscape
+    const containerHeight = isPortrait ? width * PORTRAIT_RATIO : width * LANDSCAPE_RATIO;
     
-    // Calculate vertical margin to center the image
-    const verticalMargin = (contentHeight - baseHeight - insets.top) / 2;
-    
-    // Calculate scale factor for smooth animation
-    const scale = expandAnim.interpolate({
+    // Calculate vertical margin to center in the available space
+    const availableHeight = height - insets.top - insets.bottom - COLLAPSED_HEIGHT;
+    const verticalMargin = (availableHeight - containerHeight) / 3;
+
+    // Calculate how much the image should move up when notes expand
+    const translateY = expandAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [1, (baseHeight - (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * 0.7) / baseHeight],
+      outputRange: [0, -EXPANDED_HEIGHT / 4],
       extrapolate: 'clamp'
     });
 
     return (
       <View style={[styles.mediaContainer, { 
-        height: contentHeight,
-        paddingTop: insets.top 
+        height: height - insets.bottom,
+        width: width,
       }]}>
-        <View style={[
+        <Animated.View style={[
           styles.mediaWrapper, 
           { 
-            height: baseHeight,
-            marginTop: verticalMargin,
-            width: width // Ensure full width
+            height: containerHeight,
+            marginTop: verticalMargin + insets.top,
+            width: width,
+            transform: [{ translateY }]
           }
         ]}>
           <Animated.View style={[
             styles.mediaContent,
             {
-              transform: [{ scale }],
-              width: width // Ensure full width
+              transform: [{ 
+                scale: expandAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0.70], // Slightly adjusted scale factor for better proportion
+                  extrapolate: 'clamp'
+                })
+              }],
+              width: width,
+              height: containerHeight,
             }
           ]}>
             <ExpoImage
               source={{ uri: imageUrl }}
               style={[styles.media, { 
-                height: baseHeight,
-                width: width // Ensure full width
+                height: containerHeight,
+                width: width,
               }]}
-              contentFit="contain"
+              contentFit={isPortrait ? "fill" : "contain"}
               transition={300}
             />
           </Animated.View>
-        </View>
+        </Animated.View>
         
         <Animated.View style={[
-          styles.notesContainer,
-          {
+          styles.notesWrapper, 
+          { 
+            paddingBottom: insets.bottom,
             transform: [{ 
               translateY: expandAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [EXPANDED_HEIGHT - COLLAPSED_HEIGHT, 0],
+                outputRange: [-20, 0], // Move notes up by 60 when collapsed
                 extrapolate: 'clamp'
               })
             }]
           }
         ]}>
-          <TouchableOpacity 
-            onPress={toggleExpand} 
-            style={styles.notesCollapsedHeader}
-            activeOpacity={0.7}
-          >
-            <View style={styles.notesHeaderLeft}>
-              <Text style={styles.notesTitle}>
-                Notes
-                <Text style={styles.notesCount}>
-                  {notesCount > 0 ? ` (${notesCount})` : ''}
-                </Text>
-              </Text>
-            </View>
-            <Animated.View style={{ 
+          <Animated.View style={[
+            styles.notesContainer,
+            {
               transform: [{ 
-                rotate: expandAnim.interpolate({
+                translateY: expandAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ['0deg', '180deg']
-                }) 
+                  outputRange: [EXPANDED_HEIGHT - COLLAPSED_HEIGHT, 0],
+                  extrapolate: 'clamp'
+                })
               }]
-            }}>
-              <Iconify icon="material-symbols:keyboard-arrow-up-rounded" size={20} color="white" />
-            </Animated.View>
-          </TouchableOpacity>
-
-          <Animated.View style={[
-            styles.expandedContent,
-            {
-              opacity: expandAnim
             }
           ]}>
-            <View style={styles.notesList}>
-              {notes.length > 0 ? notes.map(renderNote) : (
-                <Text style={styles.noNotesText}>No notes yet</Text>
-              )}
-            </View>
-          </Animated.View>
-
-          <Animated.View style={[
-            styles.inputContainer,
-            {
-              opacity: expandAnim
-            }
-          ]}>
-            <TextInput
-              style={styles.noteInput}
-              placeholder="Add a note..."
-              placeholderTextColor="rgba(255, 255, 255, 0.5)"
-              value={newNote}
-              onChangeText={setNewNote}
-              multiline
-            />
-            <TouchableOpacity style={styles.addNoteButtonContainer}>
-              <LinearGradient
-                colors={['#3A7BD5', '#9D50BB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.addNoteButton}
-              >
-                <Iconify icon="material-symbols:send" size={18} color="white" />
-              </LinearGradient>
+            <TouchableOpacity 
+              onPress={toggleExpand} 
+              style={styles.notesCollapsedHeader}
+              activeOpacity={0.7}
+            >
+              <View style={styles.notesHeaderLeft}>
+                <Text style={styles.notesTitle}>
+                  Notes
+                  <Text style={styles.notesCount}>
+                    {notesCount > 0 ? ` (${notesCount})` : ''}
+                  </Text>
+                </Text>
+              </View>
+              <Animated.View style={{ 
+                transform: [{ 
+                  rotate: expandAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '180deg']
+                  }) 
+                }]
+              }}>
+                <Iconify icon="material-symbols:keyboard-arrow-up-rounded" size={20} color="white" />
+              </Animated.View>
             </TouchableOpacity>
+
+            <Animated.View style={[
+              styles.expandedContent,
+              {
+                opacity: expandAnim
+              }
+            ]}>
+              <View style={styles.notesList}>
+                {notes.length > 0 ? notes.map(renderNote) : (
+                  <Text style={styles.noNotesText}>No notes yet</Text>
+                )}
+              </View>
+            </Animated.View>
+
+            <Animated.View style={[
+              styles.inputContainer,
+              {
+                opacity: expandAnim
+              }
+            ]}>
+              <TextInput
+                style={styles.noteInput}
+                placeholder="Add a note..."
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={newNote}
+                onChangeText={setNewNote}
+                multiline
+              />
+              <TouchableOpacity style={styles.addNoteButtonContainer}>
+                <LinearGradient
+                  colors={['#3A7BD5', '#9D50BB']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.addNoteButton}
+                >
+                  <Iconify icon="material-symbols:send" size={18} color="white" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
           </Animated.View>
         </Animated.View>
       </View>
     );
-  }, [contentHeight, expandAnim, mediaAspectRatios, toggleExpand, newNote, insets.top]);
+  }, [height, width, expandAnim, mediaAspectRatios, toggleExpand, newNote, insets.top, insets.bottom]);
 
   return (
     <View style={styles.container}>
@@ -385,35 +406,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   mediaContainer: {
-    width: width,
     backgroundColor: '#000',
   },
   mediaWrapper: {
-    width: width,
     backgroundColor: '#000',
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   mediaContent: {
-    width: width,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  media: {
-    width: width,
     backgroundColor: '#000',
   },
-  notesContainer: {
+  media: {
+    backgroundColor: '#000',
+  },
+  notesWrapper: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: EXPANDED_HEIGHT,
+    zIndex: 10
+  },
+  notesContainer: {
     backgroundColor: '#000',
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
     overflow: 'hidden',
+    height: EXPANDED_HEIGHT
   },
   notesCollapsedHeader: {
     flexDirection: 'row',
