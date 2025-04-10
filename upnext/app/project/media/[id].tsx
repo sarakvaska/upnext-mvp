@@ -275,20 +275,20 @@ export default function MediaViewerScreen() {
         // Set state directly without batching or debouncing
         setKeyboardShowing(false);
         
-        // Speed up animation for hiding as well
+        // DO NOT set value directly on hide - this causes the jump
+        // Instead, only use the animation
+        
+        // Use a slower animation when hiding to create a smooth slide
         const animDuration = Platform.OS === 'ios'
-          ? Math.max(e.duration * 0.7, 160) // 30% faster than keyboard
-          : Math.max(e.duration * 0.6, 100); // 40% faster on Android
+          ? Math.max(e.duration * 0.95, 220) // Slightly slower for smoother slide
+          : Math.max(e.duration * 0.9, 180); // Slightly slower on Android too
         
-        // For immediate response, set value directly first
-        inputBarPosition.setValue(0);
-        
-        // Start animation in the same tick
+        // Use a different easing curve for hiding - more gradual
         Animated.timing(inputBarPosition, {
           toValue: 0,
           duration: animDuration,
           useNativeDriver: true,
-          easing: Easing.out(Easing.quad), // Matching the show animation
+          easing: Easing.bezier(0.2, 0, 0, 1), // Use standard bezier for smoother exit
         }).start();
       }
     };
@@ -497,6 +497,16 @@ export default function MediaViewerScreen() {
               <View style={styles.noteInput}>
                 <Text style={styles.inputPlaceholder}>Add a note...</Text>
               </View>
+              <TouchableOpacity style={styles.addNoteButtonContainer}>
+                  <LinearGradient
+                    colors={['#3A7BD5', '#9D50BB']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.addNoteButton}
+                  >
+                    <Iconify icon="material-symbols:send" size={18} color="white" />
+                  </LinearGradient>
+                </TouchableOpacity>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -831,6 +841,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 20,
     paddingVertical: 8,
     minHeight: 36,
     maxHeight: 100,
