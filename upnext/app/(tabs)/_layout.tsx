@@ -24,7 +24,8 @@ export default function TabLayout() {
   const modalScale = useSharedValue(0);
   const modalOpacity = useSharedValue(0);
   const modalY = useSharedValue(20);
-  const textOpacity = useSharedValue(1);
+  const createOpacity = useSharedValue(1);
+  const closeOpacity = useSharedValue(0);
 
   const openMenu = () => {
     setIsMenuOpen(true);
@@ -40,6 +41,15 @@ export default function TabLayout() {
       mass: 0.5,
     });
     modalOpacity.value = withTiming(1, {
+      duration: 200,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
+    // Crossfade text
+    createOpacity.value = withTiming(0, {
+      duration: 200,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
+    closeOpacity.value = withTiming(1, {
       duration: 200,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
@@ -62,6 +72,15 @@ export default function TabLayout() {
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     }, () => {
       runOnJS(finishClosing)();
+    });
+    // Crossfade text
+    createOpacity.value = withTiming(1, {
+      duration: 200,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
+    closeOpacity.value = withTiming(0, {
+      duration: 200,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
   };
 
@@ -89,6 +108,16 @@ export default function TabLayout() {
       opacity: modalOpacity.value,
     };
   });
+
+  const createTextStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    opacity: createOpacity.value,
+  }));
+
+  const closeTextStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    opacity: closeOpacity.value,
+  }));
 
   return (
     <>
@@ -150,21 +179,14 @@ export default function TabLayout() {
                   end={{ x: 1, y: 1 }}
                   style={styles.createButtonGradient}
                 >
-                  {isMenuOpen ? (
-                    <Animated.Text 
-                      entering={FadeIn.duration(200)} 
-                      style={styles.createButtonText}
-                    >
-                      Close
-                    </Animated.Text>
-                  ) : (
-                    <Animated.Text 
-                      entering={FadeIn.duration(200)} 
-                      style={styles.createButtonText}
-                    >
+                  <View style={styles.textContainer}>
+                    <Animated.Text style={[styles.createButtonText, createTextStyle]}>
                       Create
                     </Animated.Text>
-                  )}
+                    <Animated.Text style={[styles.createButtonText, closeTextStyle]}>
+                      Close
+                    </Animated.Text>
+                  </View>
                 </LinearGradient>
               </View>
             ),
@@ -222,10 +244,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  textContainer: {
+    position: 'relative',
+    width: 50,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   createButtonText: {
     color: '#fff',
     fontSize: 15,
     fontWeight: '500',
+    textAlign: 'center',
+    width: '100%',
   },
   modalBackdrop: {
     flex: 1,
