@@ -36,9 +36,9 @@ export default function Header({ screen, icon }: { screen: string; icon?: string
             <TouchableOpacity style={styles.iconButton}>
               <Iconify icon="material-symbols:search-rounded" color="#fff" size={24} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
+            {/* <TouchableOpacity style={styles.iconButton}>
               <Iconify icon="mingcute:notification-line" color="#fff" size={24} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </>
         ) : null}
       </View>

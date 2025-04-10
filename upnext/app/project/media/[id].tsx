@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Text, Animated, TextInput, Easing, useWindowDimensions, LayoutAnimation, KeyboardAvoidingView, Platform, Keyboard, PanResponder, ScrollView, Modal } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Text, Animated, TextInput, Easing, useWindowDimensions, LayoutAnimation, KeyboardAvoidingView, Platform, Keyboard, PanResponder, ScrollView, Modal, TouchableWithoutFeedback, UIManager } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Iconify } from 'react-native-iconify';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,8 +9,8 @@ import { Image as ExpoImage } from 'expo-image';
 
 const PORTRAIT_RATIO = 1.3;    // height = width * 1.3
 const LANDSCAPE_RATIO = 0.85;  // height = width * 0.85
-const COLLAPSED_HEIGHT = 48;
-const EXPANDED_HEIGHT = 250;
+const COLLAPSED_HEIGHT = 30;
+const EXPANDED_HEIGHT = 350;
 
 interface Note {
   id: number;
@@ -44,6 +44,13 @@ const mockNotes: NotesData = {
       author: "Mike", 
       timestamp: "5h ago",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
+    }, 
+    { 
+      id: 3, 
+      text: "wow!", 
+      author: "Mike", 
+      timestamp: "5h ago",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
     }
   ],
   "2": [
@@ -72,6 +79,13 @@ const SPRING_CONFIG = {
 const KEYBOARD_INPUT_HEIGHT = 90; // Height of input + padding
 const STATUS_BAR_BUFFER = 20; // Extra space below status bar
 
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
+
 export default function MediaViewerScreen() {
   const { id, initialIndex, images } = useLocalSearchParams();
   const flatListRef = useRef<FlatList>(null);
@@ -87,7 +101,9 @@ export default function MediaViewerScreen() {
   const { height, width } = useWindowDimensions();
   const keyboardHeight = useRef(new Animated.Value(0)).current;
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const modalKeyboardHeight = useRef(new Animated.Value(0)).current;
+  const [keyboardShowing, setKeyboardShowing] = useState(false);
+  const inputBarPosition = useRef(new Animated.Value(0)).current;
+  const [keyboardHeightValue, setKeyboardHeightValue] = useState(0);
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(SPRING_CONFIG);
@@ -190,31 +206,78 @@ export default function MediaViewerScreen() {
     };
   }, [isExpanded]);
 
+  const handleInputPress = () => {
+    setIsModalVisible(true);
+    // We no longer need to toggle expand since the modal is full screen
+  };
+
+  const handleModalClose = () => {
+    // First dismiss the keyboard
+    Keyboard.dismiss();
+    
+    // Immediately start closing the modal without delay
+    setIsModalVisible(false);
+    
+    // Reset other state
+    inputBarPosition.setValue(0);
+    setNewNote('');
+  };
+
   useEffect(() => {
+    if (isModalVisible) {
+      // Small delay to ensure the modal is fully rendered before focusing
+      setTimeout(() => {
+        // For pageSheet presentation style, we need to ensure the input is visible
+        if (Platform.OS === 'android') {
+          Keyboard.dismiss();
+          setTimeout(() => Keyboard.isVisible || Keyboard.dismiss(), 100);
+        }
+      }, 300);
+    }
+  }, [isModalVisible]);
+
+  // Custom keyboard handling to make input bar stick to keyboard
+  useEffect(() => {
+    const showListener = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideListener = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
     const keyboardWillShow = (e: any) => {
       if (isModalVisible) {
-        Animated.timing(modalKeyboardHeight, {
-          toValue: e.endCoordinates.height,
-          duration: e.duration,
+        setKeyboardShowing(true);
+        setKeyboardHeightValue(e.endCoordinates.height);
+        
+        // Add a small offset (10-15 pixels) to move input bar slightly down
+        const keyboardOffset = Platform.OS === 'ios' 
+          ? Math.min(40, e.endCoordinates.height * 0.08)
+          : 20; // Increase from 10 to 20
+        
+        // Animate the input bar to move up with the keyboard, but with offset
+        Animated.timing(inputBarPosition, {
+          toValue: -(e.endCoordinates.height - keyboardOffset),
+          duration: Platform.OS === 'ios' ? e.duration : 200,
           useNativeDriver: true,
-          easing: Easing.bezier(0.2, 0, 0, 1),
+          easing: Platform.OS === 'ios' 
+            ? Easing.bezier(0.17, 0.59, 0.3, 0.97) // iOS keyboard curve
+            : Easing.out(Easing.poly(3)), // Android curve
         }).start();
       }
     };
 
     const keyboardWillHide = (e: any) => {
-      if (!isModalVisible) {
-        Animated.timing(modalKeyboardHeight, {
+      if (isModalVisible) {
+        setKeyboardShowing(false);
+        
+        // Animate the input bar to move down with the keyboard
+        Animated.timing(inputBarPosition, {
           toValue: 0,
-          duration: e.duration,
+          duration: Platform.OS === 'ios' ? e.duration : 200, // Android needs faster animation
           useNativeDriver: true,
-          easing: Easing.bezier(0.2, 0, 0, 1),
+          easing: Platform.OS === 'ios' 
+            ? Easing.bezier(0.17, 0.59, 0.3, 0.97) // iOS keyboard curve
+            : Easing.in(Easing.poly(3)), // Android curve
         }).start();
       }
     };
-
-    const showListener = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideListener = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const keyboardShowSub = Keyboard.addListener(showListener, keyboardWillShow);
     const keyboardHideSub = Keyboard.addListener(hideListener, keyboardWillHide);
@@ -223,21 +286,17 @@ export default function MediaViewerScreen() {
       keyboardShowSub.remove();
       keyboardHideSub.remove();
     };
-  }, [isModalVisible]);
+  }, [isModalVisible, inputBarPosition]);
 
-  const handleInputPress = () => {
-    setIsModalVisible(true);
-    if (!isExpanded) {
-      toggleExpand();
+  // Add cleanup effect for modal closing
+  useEffect(() => {
+    // When modal is no longer visible, reset everything
+    if (!isModalVisible) {
+      // Reset positions and state
+      inputBarPosition.setValue(0);
+      setKeyboardShowing(false);
     }
-  };
-
-  const handleModalClose = () => {
-    Keyboard.dismiss();
-    setIsModalVisible(false);
-    setNewNote('');
-    modalKeyboardHeight.setValue(0);
-  };
+  }, [isModalVisible, inputBarPosition]);
 
   const renderItem = useCallback(({ item: imageUrl, index }: { item: string; index: number }) => {
     const notes = mockNotes[index + 1] || [];
@@ -251,7 +310,7 @@ export default function MediaViewerScreen() {
 
     const translateY = expandAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, -EXPANDED_HEIGHT / 4],
+      outputRange: [0, -EXPANDED_HEIGHT / 2],
       extrapolate: 'clamp'
     });
 
@@ -272,6 +331,17 @@ export default function MediaViewerScreen() {
         height: height - insets.bottom,
         width: width,
       }]}>
+        {isExpanded && (
+          <TouchableOpacity 
+            style={[styles.overlay, { height: height - insets.bottom }]} 
+            activeOpacity={1} 
+            onPress={() => {
+              if (isExpanded) {
+                toggleExpand();
+              }
+            }}
+          />
+        )}
         <Animated.View style={[
           styles.mediaWrapper, 
           { 
@@ -283,7 +353,7 @@ export default function MediaViewerScreen() {
                 translateY,
                 inputFocusAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0, -EXPANDED_HEIGHT / 6],
+                  outputRange: [0, -EXPANDED_HEIGHT / 3],
                   extrapolate: 'clamp'
                 })
               )
@@ -376,32 +446,34 @@ export default function MediaViewerScreen() {
               </Animated.View>
             </TouchableOpacity>
 
-            <Animated.View style={[
-              styles.expandedContent,
-              {
-                opacity: expandAnim,
-                flex: 1,
-                transform: [{
-                  translateY: inputFocusAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, -EXPANDED_HEIGHT / 5 + COLLAPSED_HEIGHT],
-                    extrapolate: 'clamp'
-                  })
-                }]
-              }
-            ]}>
-              <ScrollView 
-                style={[
-                  styles.notesList,
-                  isInputFocused && { maxHeight: height - 180 }
-                ]} 
-                bounces={false}
-              >
-                {notes.length > 0 ? notes.map(renderNote) : (
-                  <Text style={styles.noNotesText}>No notes yet</Text>
-                )}
-              </ScrollView>
-            </Animated.View>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <Animated.View style={[
+                styles.expandedContent,
+                {
+                  opacity: expandAnim,
+                  flex: 1,
+                  transform: [{
+                    translateY: inputFocusAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, -EXPANDED_HEIGHT / 5 + COLLAPSED_HEIGHT],
+                      extrapolate: 'clamp'
+                    })
+                  }]
+                }
+              ]}>
+                <ScrollView 
+                  style={[
+                    styles.notesList,
+                    isInputFocused && { maxHeight: height - 180 }
+                  ]} 
+                  bounces={false}
+                >
+                  {notes.length > 0 ? notes.map(renderNote) : (
+                    <Text style={styles.noNotesText}>No notes yet</Text>
+                  )}
+                </ScrollView>
+              </Animated.View>
+            </TouchableWithoutFeedback>
 
             <TouchableOpacity
               style={[styles.inputContainer, { opacity: expandAnim }]}
@@ -429,9 +501,12 @@ export default function MediaViewerScreen() {
           visible={isModalVisible}
           animationType="slide"
           presentationStyle="pageSheet"
+          statusBarTranslucent={true}
           onRequestClose={handleModalClose}
+          onDismiss={handleModalClose}
+          hardwareAccelerated={true}
         >
-          <SafeAreaView style={styles.modalContainer} pointerEvents="box-none">
+          <SafeAreaView style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 Notes
@@ -442,38 +517,38 @@ export default function MediaViewerScreen() {
               <TouchableOpacity 
                 onPress={handleModalClose}
                 style={styles.modalCloseButton}
-                activeOpacity={0.7}
+                activeOpacity={0.5}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
               >
                 <View style={styles.closeButtonHitSlop}>
                   <Text style={styles.modalDoneButton}>Close</Text>
                 </View>
               </TouchableOpacity>
             </View>
-            <View style={styles.modalContent}>
-              <ScrollView 
-                style={styles.modalNotesList} 
-                bounces={false}
-                keyboardShouldPersistTaps="always"
-              >
-                {notes.length > 0 ? notes.map(renderNote) : (
-                  <Text style={styles.noNotesText}>No notes yet</Text>
-                )}
-              </ScrollView>
-            </View>
-            <Animated.View 
-              style={[
-                styles.modalInputWrapper,
-                {
-                  transform: [{
-                    translateY: modalKeyboardHeight.interpolate({
-                      inputRange: [0, height],
-                      outputRange: [0, -height],
-                      extrapolate: 'clamp'
-                    })
-                  }]
-                }
-              ]}
-            >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View style={styles.modalContent}>
+                <ScrollView 
+                  style={styles.modalNotesList}
+                  contentContainerStyle={{ paddingBottom: 60 }}
+                  bounces={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {notes.length > 0 ? notes.map(renderNote) : (
+                    <Text style={styles.noNotesText}>No notes yet</Text>
+                  )}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+            
+            {/* Input bar that stays above keyboard */}
+            <Animated.View style={[
+              styles.modalInputWrapper,
+              {
+                transform: [{ translateY: inputBarPosition }],
+                paddingBottom: insets.bottom > 0 ? insets.bottom - (keyboardShowing ? 8 : 0) : 10,
+                marginBottom: keyboardShowing ? 5 : 0
+              }
+            ]}>
               <View style={styles.modalInputContainer}>
                 <TextInput
                   style={styles.modalInput}
@@ -482,7 +557,7 @@ export default function MediaViewerScreen() {
                   value={newNote}
                   onChangeText={setNewNote}
                   multiline
-                  autoFocus
+                  autoFocus={true}
                 />
                 <TouchableOpacity style={styles.addNoteButtonContainer}>
                   <LinearGradient
@@ -500,7 +575,7 @@ export default function MediaViewerScreen() {
         </Modal>
       </View>
     );
-  }, [height, width, expandAnim, inputFocusAnim, mediaAspectRatios, toggleExpand, newNote, insets.top, insets.bottom, isModalVisible, modalKeyboardHeight]);
+  }, [height, width, expandAnim, inputFocusAnim, mediaAspectRatios, toggleExpand, newNote, insets.top, insets.bottom, isModalVisible, keyboardShowing, inputBarPosition]);
 
   const renderNote = (note: Note) => {
     const isExpanded = expandedNotes[note.id];
@@ -619,6 +694,14 @@ const styles = StyleSheet.create({
   },
   media: {
     backgroundColor: '#000',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    zIndex: 5,
   },
   notesWrapper: {
     position: 'absolute',
@@ -764,6 +847,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: '#000',
+    flexDirection: 'column',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -787,33 +871,41 @@ const styles = StyleSheet.create({
   },
   modalDoneButton: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#fff',
   },
   modalContent: {
     flex: 1,
     backgroundColor: '#000',
+    paddingBottom: 60,
   },
   modalNotesList: {
     flex: 1,
     padding: 16,
-    paddingBottom: 90, // Account for input height
+    paddingBottom: 16,
   },
   modalInputWrapper: {
+    backgroundColor: '#000',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 0,
     position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-    backgroundColor: '#000',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   modalInputContainer: {
     flexDirection: 'row',
     gap: 8,
     padding: 16,
     paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 16,
     backgroundColor: '#000',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalInput: {
     flex: 1,
@@ -830,7 +922,7 @@ const styles = StyleSheet.create({
   modalCloseButton: {
     padding: 8,
     marginRight: -8,
-    zIndex: 10,
+    zIndex: 15,
   },
   closeButtonHitSlop: {
     padding: 4,
