@@ -195,7 +195,7 @@ export default function TabLayout() {
           >
             <TouchableOpacity style={styles.menuItem} onPress={handleImport}>
               <Iconify icon="material-symbols:upload" size={20} color="#fff" />
-              <Text style={styles.menuItemText}>Import</Text>
+              <Text style={styles.menuItemText}>Import Content</Text>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
             <TouchableOpacity style={styles.menuItem} onPress={handleNewProject}>
@@ -238,7 +238,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 8,
     marginBottom: 90,
-    width: '45%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

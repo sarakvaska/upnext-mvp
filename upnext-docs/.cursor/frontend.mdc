@@ -1,0 +1,23 @@
+---
+description: Rules and structure for frontend code in the UpNext MVP project (UI, layout, component structure).
+globs: upnext/app/**/*, upnext/components/**/*, upnext/styles/**/*, *.tsx, *.jsx
+alwaysApply: false
+---
+## Styling
+- Use Tailwind CSS utility classes over custom CSS.
+- Ensure all pages and components are mobile responsive.
+- Avoid deeply nested styles — keep layout clear.
+
+## Component Design
+- Keep components small and composable.
+- Place reusable UI elements in `/components`.
+- Use PascalCase for component files and folder names.
+
+## Routing & Views
+- Route views live in `/app`, use file-based routing conventions.
+- Use kebab-case for folder names in routing.
+- Group related pages into logical subfolders.
+
+## Misc
+- Use `clsx` or similar helpers for conditional classNames.
+- Avoid unnecessary prop drilling — lift state as needed.
