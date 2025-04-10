@@ -51,6 +51,20 @@ const mockNotes: NotesData = {
       author: "Mike", 
       timestamp: "5h ago",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
+    }, 
+    { 
+      id: 4, 
+      text: "wow!", 
+      author: "Mike", 
+      timestamp: "5h ago",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
+    }, 
+    { 
+      id: 5, 
+      text: "wow!", 
+      author: "Mike", 
+      timestamp: "5h ago",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
     }
   ],
   "2": [
@@ -104,10 +118,14 @@ export default function MediaViewerScreen() {
   const [keyboardShowing, setKeyboardShowing] = useState(false);
   const inputBarPosition = useRef(new Animated.Value(0)).current;
   const [keyboardHeightValue, setKeyboardHeightValue] = useState(0);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(SPRING_CONFIG);
-    setIsExpanded(!isExpanded);
+    const newExpandedState = !isExpanded;
+    setIsExpanded(newExpandedState);
+    // Disable horizontal scrolling when notes are expanded, enable when collapsed
+    setScrollEnabled(!newExpandedState);
     
     Animated.timing(expandAnim, {
       toValue: isExpanded ? 0 : 1,
@@ -480,7 +498,9 @@ export default function MediaViewerScreen() {
                     styles.notesList,
                     isInputFocused && { maxHeight: height - 180 }
                   ]} 
-                  bounces={false}
+                  bounces={true}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 10 }}
                 >
                   {notes.length > 0 ? notes.map(renderNote) : (
                     <Text style={styles.noNotesText}>No notes yet</Text>
@@ -657,6 +677,7 @@ export default function MediaViewerScreen() {
           renderItem={renderItem}
           horizontal
           pagingEnabled
+          scrollEnabled={scrollEnabled}
           showsHorizontalScrollIndicator={false}
           keyExtractor={(_, index) => index.toString()}
           getItemLayout={(_, index) => ({
